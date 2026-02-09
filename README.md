@@ -17,7 +17,7 @@
 It implements a container runtime using three core Linux technologies:
 1.  **Namespaces (`unshare`):** To isolate processes (PID), hostnames (UTS), and mount points.
 2.  **Chroot:** To restrict the file system view to a specific directory.
-3.  **Cgroups (Planned):** To limit resource usage (CPU/RAM).
+3.  **Networking:** Automatically injects DNS so your container can access the internet.
 
 ## 🚀 Installation
 
@@ -30,7 +30,7 @@ It implements a container runtime using three core Linux technologies:
 Clone the repository and run the installer script.
 
 ```bash
-git clone [https://github.com/YOUR_USERNAME/baby-docker.git](https://github.com/YOUR_USERNAME/baby-docker.git)
-cd baby-docker
+git clone [https://github.com/oggythebuilder/Baby_docker.git](https://github.com/oggythebuilder/Baby_docker.git)
+cd Baby_docker
 chmod +x install.sh
 sudo ./install.sh
