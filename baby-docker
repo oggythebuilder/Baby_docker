@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# =================================================================
+#  BABY DOCKER - Educational Container Engine
+#  v1.0.0 | https://github.com/YOUR_USERNAME/baby-docker
+# =================================================================
+
+# --- Config ---
+BASE_DIR="/var/lib/baby-docker"
+ROOTFS="$BASE_DIR/rootfs"
+ALPINE_URL="https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz"
+
+# --- Colors ---
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[OK]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+check_root() {
+    if [ "$EUID" -ne 0 ]; then
+        log_error "Permission denied. Please run with sudo."
+        exit 1
+    fi
+}
+
+# --- Commands ---
+
+cmd_pull() {
+    check_root
+    if [ -d "$ROOTFS" ]; then
+        log_info "Image already exists."
+        return
+    fi
+
+    log_info "Initializing storage..."
+    mkdir -p "$ROOTFS"
+
+    log_info "Downloading Alpine Linux..."
+    wget -q -O /tmp/alpine.tar.gz "$ALPINE_URL"
+    tar -xzf /tmp/alpine.tar.gz -C "$ROOTFS"
+    rm /tmp/alpine.tar.gz
+
+    # DNS & Entrypoint Setup
+    echo "nameserver 8.8.8.8" > "$ROOTFS/etc/resolv.conf"
+    
+    cat <<EOF > "$ROOTFS/bin/entrypoint"
+#!/bin/sh
+export PS1="\[\e[1;32m\](baby-docker)\[\e[0m\] \w # "
+mount -t proc proc /proc
+clear
+echo "Container Started. You are isolated."
+exec /bin/sh
+EOF
+    chmod +x "$ROOTFS/bin/entrypoint"
+    log_success "Image pulled successfully."
+}
+
+cmd_run() {
+    check_root
+    if [ ! -d "$ROOTFS" ]; then
+        log_error "Image not found. Run 'baby-docker pull' first."
+        exit 1
+    fi
+
+    log_info "Starting container..."
+    unshare --fork --pid --uts --mount-proc chroot "$ROOTFS" /bin/entrypoint
+    
+    umount "$ROOTFS/proc" 2>/dev/null || true
+}
+
+cmd_clean() {
+    check_root
+    rm -rf "$BASE_DIR"
+    log_success "All containers and images deleted."
+}
+
+cmd_help() {
+    echo "Usage: baby-docker [command]"
+    echo "Commands: pull, run, clean"
+}
+
+case "$1" in
+    pull) cmd_pull ;;
+    run) cmd_run ;;
+    clean) cmd_clean ;;
+    *) cmd_help ;;
+esac
